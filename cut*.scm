@@ -1,3 +1,9 @@
+(define-syntax insp
+  (syntax-rules ()
+    ((_ x ...) '(x ...))))
+
+;; cut* ------------------------------------------
+
 (define-syntax cut*-help
   (syntax-rules (<>)
     ((_ k vars (a . d))
@@ -26,3 +32,33 @@
   (syntax-rules ()
     ((_ . form)
      (cut*-help (cut*-finish) () form))))
+
+;; lift-expression (for cute*) -------------------
+
+(define-syntax lift-expressions
+  (syntax-rules ()
+    ((_ (k ...) (kvs ...) (a . b))
+     (has-cut? (a . b)
+               (lift-expressions (lift-rec (k ...) b) (kvs ...) a)
+               (k ... (kvs ... (x (a . b))) x)))
+    ((_ (k ...) kvs x)
+     (k ... kvs x))))
+
+(define-syntax lift-rec
+  (syntax-rules ()
+    ((_ k b kvs a)
+     (lift-expressions (lift-rec2 k a) kvs b))))
+
+(define-syntax lift-rec2
+  (syntax-rules ()
+    ((_ (k ...) a kvs b)
+     (k ... kvs (a . b)))))
+
+(define-syntax has-cut?
+  (syntax-rules (<>)
+    ((_ (a . b) found not-found)
+     (has-cut? a found (has-cut? b found not-found)))
+    ((_ <> found not-found)
+     found)
+    ((_ x found not-found)
+     not-found)))

@@ -62,3 +62,20 @@
      found)
     ((_ x found not-found)
      not-found)))
+
+;; cute* -----------------------------------------
+
+(define-syntax cute*
+  (syntax-rules ()
+    ((_ . form)
+     (lift-expressions (finish-cute*) () form))))
+
+(define-syntax finish-cute*
+  (syntax-rules ()
+    ((_ kvs form)
+     (cut*-help (finish-cute*-2 kvs) () form))))
+
+(define-syntax finish-cute*-2
+  (syntax-rules ()
+    ((_ kvs vars form)
+     (let kvs (lambda vars . form)))))

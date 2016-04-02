@@ -1,6 +1,7 @@
 (define-syntax insp
   (syntax-rules ()
-    ((_ x ...) '(x ...))))
+    ((_ x ...)
+     '(results: x ...))))
 
 ;; cut* ------------------------------------------
 
@@ -26,23 +27,25 @@
 (define-syntax cut*-finish
   (syntax-rules ()
     ((_ vars form)
-     (lambda vars . form))))
+     (lambda vars form))))
 
 (define-syntax cut*
   (syntax-rules ()
-    ((_ . form)
+    ((_ form)
      (cut*-help (cut*-finish) () form))))
 
 ;; lift-expression (for cute*) -------------------
 
 (define-syntax lift-expressions
-  (syntax-rules ()
+  (syntax-rules (<>)
     ((_ (k ...) (kvs ...) (a . b))
      (has-cut? (a . b)
                (lift-expressions (lift-rec (k ...) b) (kvs ...) a)
                (k ... (kvs ... (x (a . b))) x)))
-    ((_ (k ...) kvs x)
-     (k ... kvs x))))
+    ((_ (k ...) kvs <>)
+     (k ... kvs <>))
+    ((_ (k ...) (kvs ...) exp)
+     (k ... (kvs ... (x exp)) x))))
 
 (define-syntax lift-rec
   (syntax-rules ()
@@ -67,7 +70,7 @@
 
 (define-syntax cute*
   (syntax-rules ()
-    ((_ . form)
+    ((_ form)
      (lift-expressions (finish-cute*) () form))))
 
 (define-syntax finish-cute*
@@ -78,4 +81,5 @@
 (define-syntax finish-cute*-2
   (syntax-rules ()
     ((_ kvs vars form)
-     (let kvs (lambda vars . form)))))
+     (let kvs (lambda vars form)))))
+

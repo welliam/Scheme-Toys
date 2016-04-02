@@ -34,52 +34,47 @@
     ((_ form)
      (cut*-help (cut*-finish) () form))))
 
-;; lift-expression (for cute*) -------------------
+;; quasi-lift-expressions (for quasi-cute*) ------
 
-(define-syntax lift-expressions
-  (syntax-rules (<>)
-    ((_ (k ...) (kvs ...) (a . b))
-     (has-cut? (a . b)
-               (lift-expressions (lift-rec (k ...) b) (kvs ...) a)
-               (k ... (kvs ... (x (a . b))) x)))
-    ((_ (k ...) kvs <>)
-     (k ... kvs <>))
-    ((_ (k ...) (kvs ...) exp)
-     (k ... (kvs ... (x exp)) x))))
+(define-syntax quasi-lift-expressions
+  (syntax-rules (quasiquote unquote)
+    ((_ (k ...) kvs (quasiquote form))
+     (k ... kvs (quasiquote form)))
+    ((_ (k ...) (kvs ...) (unquote form))
+     (k ... (kvs ... (x form)) x))
+    ((_ (k ...) (kvs ...) (a . d))
+     (quasi-lift-expressions
+      (quasi-lift-rec (k ...) d) (kvs ...) a))
+    ((_ (k ...) kvs form)
+     (k ... kvs form))))
 
-(define-syntax lift-rec
+(define-syntax quasi-lift-rec
   (syntax-rules ()
     ((_ k b kvs a)
-     (lift-expressions (lift-rec2 k a) kvs b))))
+     (quasi-lift-expressions (quasi-lift-rec2 k a) kvs b))))
 
-(define-syntax lift-rec2
+(define-syntax quasi-lift-rec2
   (syntax-rules ()
     ((_ (k ...) a kvs b)
      (k ... kvs (a . b)))))
 
-(define-syntax has-cut?
-  (syntax-rules (<>)
-    ((_ (a . b) found not-found)
-     (has-cut? a found (has-cut? b found not-found)))
-    ((_ <> found not-found)
-     found)
-    ((_ x found not-found)
-     not-found)))
+;; quasi-cute* -----------------------------------
 
-;; cute* -----------------------------------------
-
-(define-syntax cute*
+(define-syntax quasi-cute*
   (syntax-rules ()
     ((_ form)
-     (lift-expressions (finish-cute*) () form))))
+     (quasi-lift-expressions (finish-quasi-cute*) () form))))
 
-(define-syntax finish-cute*
+(define-syntax finish-quasi-cute*
   (syntax-rules ()
-    ((_ kvs form)
-     (cut*-help (finish-cute*-2 kvs) () form))))
+    ((_ kvs x)
+     (let kvs (cut* x)))))
 
-(define-syntax finish-cute*-2
-  (syntax-rules ()
-    ((_ kvs vars form)
-     (let kvs (lambda vars form)))))
-
+;; interesting(?) results on chicken scheme (possibly others?) with
+;; cute* and bindings to <>. for example, this is 'uh-oh:
+;; (let ((<> 'uh-oh)) ((cute* <>)))
+;; notice how cute* doesn't capture the <>... should it?
+;;
+;; i suppose this is consistent with behavior like the following being
+;; unspecified rather than #t:
+;; (let ((else #f)) (cond (else #t)))

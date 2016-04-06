@@ -3,6 +3,13 @@
     ((_ x ...)
      '(results: x ...))))
 
+(define-syntax wrap-begin
+  (syntax-rules ()
+    ((_ (k ...) form)
+     (k ... form))
+    ((_ (k ...) form form* ...)
+     (k ... (begin form form* ...)))))
+
 ;; cut* ------------------------------------------
 
 (define-syntax cut*-help
@@ -31,8 +38,9 @@
 
 (define-syntax cut*
   (syntax-rules ()
-    ((_ form)
-     (cut*-help (cut*-finish) () form))))
+    ((_ form form* ...)
+     (wrap-begin (cut*-help (cut*-finish) ())
+                 form form* ...))))
 
 ;; quasi-lift-expressions (for quasi-cute*) ------
 
@@ -62,13 +70,14 @@
 
 (define-syntax quasi-cute*
   (syntax-rules ()
-    ((_ form)
-     (quasi-lift-expressions (finish-quasi-cute*) () form))))
+    ((_ form form* ...)
+     (wrap-begin (quasi-lift-expressions (finish-quasi-cute*) ())
+                 form form* ...))))
 
 (define-syntax finish-quasi-cute*
   (syntax-rules ()
-    ((_ kvs x)
-     (let kvs (cut* x)))))
+    ((_ kvs form)
+     (let kvs (cut* form)))))
 
 ;; interesting(?) results on chicken scheme (possibly others?) with
 ;; cute* and bindings to <>. for example, this is 'uh-oh:
